@@ -99,6 +99,16 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<!-- Zona horaria de la JVM de los tests (los tests no pasan por main()).
+                         Nombre oficial: Windows reporta el alias viejo America/Buenos_Aires,
+                         que el Postgres de la imagen Debian ya no reconoce. -->
+					<argLine>-Duser.timezone=America/Argentina/Buenos_Aires</argLine>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 
