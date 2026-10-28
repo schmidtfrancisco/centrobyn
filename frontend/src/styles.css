@@ -1,0 +1,174 @@
+/*
+ * Tema del design system — Centro Blanco y Negro (Tailwind CSS 4).
+ *
+ * En Tailwind 4 la configuración ya no va en tailwind.config.js: vive acá,
+ * en el bloque @theme. Cada variable --color-*, --text-*, etc. genera sus
+ * clases (bg-neutral-50, text-xl…) y además queda disponible como variable
+ * CSS normal: var(--color-neutral-200).
+ *
+ * Ver DESIGN_SYSTEM.md para el razonamiento detrás de cada valor. Este
+ * archivo solo traduce esas reglas.
+ *
+ * LISTAS CERRADAS: cada grupo empieza con "--grupo-*: initial", que borra los
+ * valores por defecto de Tailwind. Una clase fuera de la lista (bg-blue-500,
+ * text-lg, rounded-sm, shadow-md) simplemente no genera estilos.
+ *
+ * Nombres: se usan los nombres estándar de Tailwind con su valor estándar
+ * (text-xl = 20px, rounded-md = 6px). Lo que es propio del proyecto (colores
+ * funcionales, sombra, roles de texto) también lleva nombre en inglés, igual
+ * que el código. Los comentarios siguen en castellano.
+ */
+
+@import "tailwindcss";
+
+/* "static": publica TODAS las variables en :root, aunque ninguna clase las
+   use. Sin esto, Tailwind solo publica las que encuentra en uso, y un
+   var(--color-neutral-300) escrito en el CSS de un componente quedaría
+   vacío si ninguna plantilla usa bg-neutral-300. */
+@theme static {
+  /* ── Se borran los valores por defecto de cada grupo ─────────────────── */
+  --color-*: initial;
+  --font-*: initial;
+  --text-*: initial;
+  --tracking-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
+  --text-shadow-*: initial;
+
+  /* ── Colores ──────────────────────────────────────────────────────────── */
+  --color-white: #ffffff;
+
+  /* Neutros. Primario = neutral-900; su hover aclara a neutral-700. */
+  --color-neutral-50: #fafafa;  /* fondo de página, tarjeta de contexto fijo */
+  --color-neutral-100: #f5f5f5; /* encabezado de tabla, hover, círculo de ícono */
+  --color-neutral-200: #e5e5e5; /* bordes (borde por defecto del proyecto) */
+  --color-neutral-300: #d4d4d4; /* hover del borde de campos, toggle apagado */
+  --color-neutral-400: #a3a3a3; /* texto deshabilitado, miga de pan */
+  --color-neutral-500: #737373; /* texto secundario, etiquetas de dato, ayuda */
+  --color-neutral-600: #525252; /* encabezado de tabla, íconos neutros */
+  --color-neutral-700: #404040; /* hover del primario, ítems del sidebar */
+  --color-neutral-900: #171717; /* texto principal, primario, foco, selección */
+
+  /* Funcionales: texto/ícono en tono 700 · fondo en 100 · borde en 200. */
+  --color-success: #15803d;
+  --color-success-bg: #dcfce7;
+  --color-success-border: #bbf7d0;
+
+  --color-warning: #b45309;
+  --color-warning-bg: #fef3c7;
+  --color-warning-border: #fde68a;
+
+  --color-danger: #b91c1c;
+  --color-danger-bg: #fee2e2;
+  --color-danger-border: #fecaca;
+
+  --color-info: #1d4ed8;
+  --color-info-bg: #dbeafe;
+  --color-info-border: #bfdbfe;
+
+  /* Colores de disciplina: NO van acá. Son un dato (disciplinas.color_hex) y
+     se aplican con [style.color], nunca con clases armadas en runtime. */
+
+  /* ── Tipografía ───────────────────────────────────────────────────────── */
+  --font-sans: "Inter", system-ui, sans-serif;
+
+  /* Pesos: solo 400 y 600. */
+  --font-weight-*: initial;
+  --font-weight-normal: 400;
+  --font-weight-semibold: 600;
+
+  /* Escala cerrada 12 · 14 · 16 · 20 · 24 · 30. Base de interfaz: text-sm. */
+  --text-xs: 0.75rem;     /* 12px */
+  --text-xs--line-height: 1rem;
+  --text-sm: 0.875rem;    /* 14px */
+  --text-sm--line-height: 1.25rem;
+  --text-base: 1rem;      /* 16px */
+  --text-base--line-height: 1.5rem;
+  --text-xl: 1.25rem;     /* 20px — título de modal */
+  --text-xl--line-height: 1.75rem;
+  --text-2xl: 1.5rem;     /* 24px — título de pantalla */
+  --text-2xl--line-height: 2rem;
+  --text-3xl: 1.875rem;   /* 30px — totales destacados */
+  --text-3xl--line-height: 2.25rem;
+
+  /* Único letter-spacing: el de las MAYÚSCULAS (encabezados de tabla,
+     títulos de subsección y del sidebar). */
+  --tracking-caps: 0.08em;
+
+  /* ── Radios ───────────────────────────────────────────────────────────── */
+  --radius-xs: 0.125rem;  /* 2px — exclusivo del checkbox */
+  --radius-md: 0.375rem;  /* 6px — botones, campos, badges */
+  --radius-lg: 0.5rem;    /* 8px — tarjetas, tablas, modales, banners, menús */
+
+  /* ── Sombras ──────────────────────────────────────────────────────────── */
+  /* Sin sombras difusas. Única sombra: la guía interior de 2px para fila
+     seleccionada e ítem activo del sidebar (no desplaza el contenido). */
+  --shadow-indicator: inset 2px 0 0 var(--color-neutral-900);
+
+  /* Espaciado: queda el de Tailwind (1 = 4px). Lista cerrada, controlada
+     en revisión: 0.5(2) · 1(4) · 1.5(6) · 2(8) · 3(12) · 4(16)
+                   6(24) · 8(32) · 10(40) · 12(48) · 16(64) */
+}
+
+/* ── Estilos base ───────────────────────────────────────────────────────── */
+@layer base {
+  /* Borde por defecto del proyecto: alcanza con escribir "border". */
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-neutral-200);
+  }
+
+  body {
+    background-color: var(--color-neutral-50);
+    color: var(--color-neutral-900);
+    font-size: var(--text-sm);
+    line-height: var(--text-sm--line-height);
+    /* Cifras tabulares en toda la app: importes, fechas, DNI y CUIT se
+       alinean en columna sin depender de cada componente. */
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::placeholder {
+    color: var(--color-neutral-500);
+  }
+
+  /* Textareas sin el asa nativa de redimensionar. */
+  textarea {
+    resize: none;
+  }
+}
+
+/* ── Roles de texto ─────────────────────────────────────────────────────── */
+/* Se repiten en todas las pantallas; una clase evita que cada componente
+   combine las cinco utilidades a mano y alguna quede distinta. */
+
+/* Etiqueta de campo en formularios: "Razón social". */
+@utility field-label {
+  @apply text-xs font-semibold text-neutral-900;
+}
+
+/* Etiqueta de dato en modales de visualización y tarjetas: "Fecha". */
+@utility data-label {
+  @apply text-xs font-semibold text-neutral-500;
+}
+
+/* Título de subsección: "CONTACTO", "CÓMO SE COBRÓ". */
+@utility subsection-title {
+  @apply text-xs font-semibold tracking-caps text-neutral-500 uppercase;
+}
+
+/* Encabezado de tabla: "IMPORTE". */
+@utility table-header {
+  @apply text-xs font-semibold tracking-caps text-neutral-600 uppercase;
+}
+
+/* Texto de ayuda debajo de un campo. */
+@utility help-text {
+  @apply text-xs text-neutral-500;
+}
