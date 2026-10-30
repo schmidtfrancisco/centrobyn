@@ -4,3 +4,6 @@
 
 # Entorno
 .env
+
+# Claude
+.claude/settings.local.json
