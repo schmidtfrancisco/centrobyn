@@ -281,11 +281,10 @@ CREATE INDEX ix_checks_due
 
 CREATE INDEX ix_checks_status ON checks (status);
 
--- Los cheques de un pago
--- NO es único: un pago puede llevar varios cheques.
-CREATE INDEX ix_checks_payment
-  ON checks (payment_id)
-  WHERE payment_id IS NOT NULL;
+-- Un solo cheque por pago.
+CREATE UNIQUE INDEX ux_checks_payment
+    ON checks (payment_id)
+    WHERE payment_id IS NOT NULL;
 
 CREATE INDEX ix_checks_received_tx
   ON checks (received_cash_transaction_id)
