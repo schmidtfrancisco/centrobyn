@@ -10,21 +10,6 @@
 
 -- ---------------------------------------------------------------------
 --  charges
---  Que debe un socio, por que concepto y cuando vence. Un socio con
---  dos actividades genera tres filas por mes: cuota social y una por
---  actividad. Separadas, para imputar cada peso a su cuenta.
---
---  COPIAS al generarse: amount, description e income_account_id.
---  Actualizar un precio, renombrar un grupo o reasignar una cuenta no
---  reescribe lo ya cobrado. Excepcion: un cargo PENDING se revalua al
---  aumentar el precio (es un reclamo vivo); uno PAID queda congelado.
---  El precio se busca por la fecha del periodo, nunca por CURRENT_DATE.
---
---  member_id = quien lo genero. billed_to_person_id = a quien se le
---  reclama (el responsable primario si es menor), copiado al emitir.
---  concept_id es trazabilidad: nunca se lee para obtener importes.
---  due_date nulo = rige el vencimiento del periodo.
---  No se generan cargos de importe cero.
 -- ---------------------------------------------------------------------
 CREATE TABLE charges (
   id                   BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -56,16 +41,14 @@ CREATE TABLE charges (
   -- Pagado si y solo si tiene pago.
   CONSTRAINT ck_charges_paid
     CHECK ((status = 'PAID') = (payment_id IS NOT NULL)),
-  -- Actividad si y solo si tiene inscripcion.
+  -- Actividad si y solo si tiene inscripción.
   CONSTRAINT ck_charges_activity_enrollment
     CHECK ((charge_type = 'ACTIVITY') = (enrollment_id IS NOT NULL)),
-  -- Anulado si y solo si tiene fecha de anulacion.
+  -- Anulado si y solo si tiene fecha de anulación.
   CONSTRAINT ck_charges_cancellation
     CHECK ((status = 'CANCELLED') = (cancelled_on IS NOT NULL))
 );
 
--- El mas usado del sistema: semaforo del carnet, morosos, estado de
--- cuenta del socio.
 CREATE INDEX ix_charges_member_status ON charges (member_id, status);
 
 CREATE INDEX ix_charges_period ON charges (billing_period_id);
@@ -77,10 +60,10 @@ CREATE INDEX ix_charges_payment
 
 CREATE INDEX ix_charges_account ON charges (income_account_id);
 
--- La doble generacion se impide en la base. Son dos indices y no uno
+-- La doble generación se impide en la base. Son dos índices y no uno
 -- porque enrollment_id es nulo en la cuota social, y dos nulos no se
 -- consideran iguales. Excluyen los anulados: si no, un cargo anulado
--- impediria para siempre volver a emitir ese mes.
+-- impediría para siempre volver a emitir ese mes.
 -- Los OTHER quedan fuera de los dos: un socio puede tener varios.
 CREATE UNIQUE INDEX ux_charges_membership
   ON charges (member_id, billing_period_id)
@@ -93,18 +76,7 @@ CREATE UNIQUE INDEX ux_charges_activity
 
 -- ---------------------------------------------------------------------
 --  cash_transactions
---  Toda plata que entra o sale y NO es cobranza a socios.
---  INCOME:  publicidad, alquiler, donaciones, subsidios, rifas.
---  EXPENSE: gas, sueldos, indumentaria, profesores, arbitros.
---  Cada fila responde dos preguntas:
---    result_account_id    -> POR QUE (reporte por cuenta)
---    financial_account_id -> DONDE   (resumen bancario)
 --  Importe siempre positivo: el sentido lo dice direction.
---  Un gasto se carga CUANDO SE PAGA: no hay facturas pendientes.
---  transaction_date define el mes; document_date es la fecha impresa
---  en el comprobante del tercero y puede ser anterior.
---  receipt_number lleva el prefijo de la serie de ingresos varios.
---  No se edita: se anula.
 -- ---------------------------------------------------------------------
 CREATE TABLE cash_transactions (
   id                    BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -171,7 +143,7 @@ CREATE INDEX ix_ct_date
 CREATE INDEX ix_ct_third_party
   ON cash_transactions (third_party_id, transaction_date);
 
--- Unico solo donde hay numero: todos los egresos lo tienen nulo.
+-- Único solo donde hay número: todos los egresos lo tienen nulo.
 CREATE UNIQUE INDEX ux_ct_receipt_number
   ON cash_transactions (receipt_number)
   WHERE receipt_number IS NOT NULL;
@@ -179,10 +151,6 @@ CREATE UNIQUE INDEX ux_ct_receipt_number
 
 -- ---------------------------------------------------------------------
 --  account_transfers
---  Plata que se mueve entre cuentas PROPIAS: depositar la caja en el
---  banco, depositar un cheque, la rendicion del cobrador.
---  NO es ingreso ni egreso, pero sin registrarla el resumen bancario
---  no coincide con el extracto.
 --  Una sola fila con origen y destino: no puede existir media
 --  transferencia. La vista la abre en una salida y una entrada.
 -- ---------------------------------------------------------------------
@@ -211,7 +179,7 @@ CREATE TABLE account_transfers (
     CHECK ((status = 'CANCELLED') = (cancelled_on IS NOT NULL))
 );
 
--- Dos indices y no uno: la vista consulta la tabla una vez por punta.
+-- Dos índices y no uno: la vista consulta la tabla una vez por punta.
 CREATE INDEX ix_at_from ON account_transfers (from_financial_account_id, transfer_date);
 CREATE INDEX ix_at_to   ON account_transfers (to_financial_account_id, transfer_date);
 CREATE INDEX ix_at_date ON account_transfers (transfer_date);
@@ -219,18 +187,6 @@ CREATE INDEX ix_at_date ON account_transfers (transfer_date);
 
 -- ---------------------------------------------------------------------
 --  checks
---  Cheques recibidos y emitidos. Un cheque no es plata, es una promesa
---  de plata: tiene dos fechas y vida propia.
---  RECIBIDO: el ingreso es del dia que se recibe, contra la cuenta
---    "Cheques en cartera". Depositar crea una transferencia cartera ->
---    banco, UNA POR CHEQUE, para que un rechazo anule solo la suya.
---  EMITIDO: el gasto es del dia que se entrega, contra el banco.
---  Origen: payment_id (cobranza) o received_cash_transaction_id
---    (donacion, rifa). spent_cash_transaction_id: endoso o emision.
---  CANCELLED = cargado por error, con motivo obligatorio.
---  Los CHECK miran la fila resultante, NO la transicion: la maquina de
---  estados vive en el servicio.
---  status sin default: el valor inicial depende de la direccion.
 -- ---------------------------------------------------------------------
 CREATE TABLE checks (
   id                            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -261,7 +217,7 @@ CREATE TABLE checks (
   CONSTRAINT fk_checks_deposit     FOREIGN KEY (deposit_transfer_id)          REFERENCES account_transfers (id),
   CONSTRAINT fk_checks_created_by  FOREIGN KEY (created_by_user_id)           REFERENCES users (id),
 
-  -- ---- Basicos ----
+  -- ---- Básicos ----
   CONSTRAINT ck_checks_amount CHECK (amount > 0),
   CONSTRAINT ck_checks_dates  CHECK (due_date >= issue_date),
   CONSTRAINT ck_checks_rejection
@@ -278,7 +234,7 @@ CREATE TABLE checks (
     CHECK ((direction = 'RECEIVED')
            = (payment_id IS NOT NULL OR received_cash_transaction_id IS NOT NULL)),
 
-  -- ---- Salida: endoso o emision ----
+  -- ---- Salida: endoso o emisión ----
   -- Un emitido nace con su gasto.
   CONSTRAINT ck_checks_issued_spent
     CHECK (direction = 'RECEIVED' OR spent_cash_transaction_id IS NOT NULL),
@@ -287,7 +243,7 @@ CREATE TABLE checks (
     CHECK (direction = 'ISSUED'
            OR (status = 'ENDORSED') = (spent_cash_transaction_id IS NOT NULL)),
 
-  -- ---- Deposito ----
+  -- ---- Depósito ----
   -- Un emitido nunca se deposita.
   CONSTRAINT ck_checks_issued_no_deposit
     CHECK (direction = 'RECEIVED' OR deposit_transfer_id IS NULL),
@@ -297,7 +253,7 @@ CREATE TABLE checks (
            OR (deposit_transfer_id IS NOT NULL)
               = (status IN ('DEPOSITED', 'CLEARED', 'REJECTED'))),
 
-  -- ---- Estados validos segun direccion ----
+  -- ---- Estados válidos según dirección ----
   CONSTRAINT ck_checks_issued_status
     CHECK (direction = 'RECEIVED'
            OR status IN ('DELIVERED', 'CLEARED', 'REJECTED', 'CANCELLED')),
@@ -306,13 +262,13 @@ CREATE TABLE checks (
 );
 
 -- Red contra la doble carga del mismo cheque recibido. El CUIT es
--- opcional: con COALESCE, dos cargas sin CUIT tambien chocan (sin el,
--- PostgreSQL no compara nulos y las dos pasarian).
+-- opcional: con COALESCE, dos cargas sin CUIT también chocan (sin el,
+-- PostgreSQL no compara nulos y las dos pasarían).
 CREATE UNIQUE INDEX ux_checks_received
   ON checks (bank_name, check_number, COALESCE(issuer_tax_id, ''))
   WHERE direction = 'RECEIVED';
 
--- Una transferencia de deposito por cheque.
+-- Una transferencia de depósito por cheque.
 CREATE UNIQUE INDEX ux_checks_deposit_transfer
   ON checks (deposit_transfer_id)
   WHERE deposit_transfer_id IS NOT NULL;
@@ -325,8 +281,8 @@ CREATE INDEX ix_checks_due
 
 CREATE INDEX ix_checks_status ON checks (status);
 
--- Los cheques de un pago: la suma tiene que dar el total, y anularlo
--- arrastra el pago. NO es unico: un pago puede llevar varios cheques.
+-- Los cheques de un pago
+-- NO es único: un pago puede llevar varios cheques.
 CREATE INDEX ix_checks_payment
   ON checks (payment_id)
   WHERE payment_id IS NOT NULL;

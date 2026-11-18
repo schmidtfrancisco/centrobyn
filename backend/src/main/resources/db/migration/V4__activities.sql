@@ -10,13 +10,6 @@
 
 -- ---------------------------------------------------------------------
 --  disciplines
---  La actividad en general: futbol, hockey, ingles, folklore.
---  "Disciplina" = actividad arancelada, no solo deporte.
---  NO participa de ninguna operacion: nadie se inscribe ni se cobra
---  contra una disciplina. Agrupa para informes y SUGIERE valores al
---  crear un grupo. El valor sugerido se COPIA al grupo, nunca se
---  referencia: actualizarlo no debe pisar los ajustes de cada grupo.
---  suggested_fee_amount sin historial: nunca le cobro a nadie.
 -- ---------------------------------------------------------------------
 CREATE TABLE disciplines (
   id                         INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -33,7 +26,7 @@ CREATE TABLE disciplines (
   CONSTRAINT fk_disciplines_income_account
     FOREIGN KEY (default_income_account_id) REFERENCES accounts (id),
 
-  -- Cero es valido: una actividad gratuita.
+  -- Cero es válido.
   CONSTRAINT ck_disciplines_fee
     CHECK (suggested_fee_amount IS NULL OR suggested_fee_amount >= 0)
 );
@@ -41,12 +34,6 @@ CREATE TABLE disciplines (
 
 -- ---------------------------------------------------------------------
 --  discipline_groups
---  En que se anota concretamente un socio: la unidad real de
---  inscripcion y de cobro. "Futbol menores", "Voley femenino".
---  income_account_id es la cuenta que MANDA y se copia al cargo.
---  min_age / max_age son orientativos: no bloquean la inscripcion.
---  Sin concepto de temporada: el grupo se reusa todos los anios.
---  capacity nulo = sin limite; el cupo lo controla el servicio.
 -- ---------------------------------------------------------------------
 CREATE TABLE discipline_groups (
   id                 INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -61,7 +48,6 @@ CREATE TABLE discipline_groups (
   created_at         TIMESTAMPTZ   NOT NULL DEFAULT now(),
   updated_at         TIMESTAMPTZ   NOT NULL DEFAULT now(),
 
-  -- Dos grupos con el mismo nombre en una disciplina serian confusos.
   CONSTRAINT ux_dg_name UNIQUE (discipline_id, name),
   CONSTRAINT fk_dg_discipline     FOREIGN KEY (discipline_id)     REFERENCES disciplines (id),
   CONSTRAINT fk_dg_income_account FOREIGN KEY (income_account_id) REFERENCES accounts (id),
@@ -80,11 +66,6 @@ CREATE INDEX ix_dg_discipline
 
 -- ---------------------------------------------------------------------
 --  group_billing_months
---  Meses en los que el grupo SI se cobra (natacion de pileta abierta,
---  colonia, etc.). SIN FILAS = se cobra los doce meses: asi los grupos
---  normales no necesitan carga y solo se registra la excepcion.
---  El proceso de generacion mensual consulta esta tabla antes de
---  emitir el cargo de actividad.
 -- ---------------------------------------------------------------------
 CREATE TABLE group_billing_months (
   id                   INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -100,12 +81,7 @@ CREATE TABLE group_billing_months (
 
 -- ---------------------------------------------------------------------
 --  group_schedules
---  Cuando y donde entrena un grupo. Funcionalidad opcional: el club
---  casi no registra horarios, los manejan los profesores.
---  weekday segun ISO: 1 = lunes ... 7 = domingo.
---  location es texto libre: el sistema no ramifica segun el lugar.
---  UNICA tabla del modelo donde el borrado fisico es correcto: un
---  horario no genero plata. Cambiar el dia es DELETE + INSERT.
+--  weekday según ISO: 1 = lunes ... 7 = domingo.
 -- ---------------------------------------------------------------------
 CREATE TABLE group_schedules (
   id                   INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -131,9 +107,6 @@ CREATE INDEX ix_gs_weekday ON group_schedules (weekday, start_time);
 
 -- ---------------------------------------------------------------------
 --  teachers
---  Rol sobre people. Sin datos de liquidacion: los profesores son
---  monotributistas y facturan. Si factura, existe ademas en
---  third_parties, enlazado por la misma persona.
 -- ---------------------------------------------------------------------
 CREATE TABLE teachers (
   id          INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -153,9 +126,6 @@ CREATE TABLE teachers (
 
 -- ---------------------------------------------------------------------
 --  group_teachers
---  Quien da cada grupo. Tabla intermedia confirmada por el club: casi
---  todos los grupos tienen mas de un profesor.
---  Sin historial: se reemplaza la fila cuando cambia el profesor.
 -- ---------------------------------------------------------------------
 CREATE TABLE group_teachers (
   id                   INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -169,7 +139,7 @@ CREATE TABLE group_teachers (
   CONSTRAINT fk_gt_teacher FOREIGN KEY (teacher_id)          REFERENCES teachers (id)
 );
 
--- "Que grupos da este profesor".
+-- "Qué grupos da este profesor".
 CREATE INDEX ix_gt_teacher ON group_teachers (teacher_id);
 
 -- Un solo titular por grupo; ayudantes, los que hagan falta.

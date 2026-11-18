@@ -1,8 +1,8 @@
 -- =====================================================================
 --  R__updated_at - Mantener updated_at al dia
 --
---  Migracion REPETIBLE: Flyway la vuelve a ejecutar cada vez que cambia
---  este archivo, siempre despues de todas las V. Por eso todo lo que
+--  Migración REPETIBLE: Flyway la vuelve a ejecutar cada vez que cambia
+--  este archivo, siempre después de todas las V. Por eso todo lo que
 --  hace tiene que poder correr dos veces sin romperse (OR REPLACE,
 --  DROP ... IF EXISTS).
 --

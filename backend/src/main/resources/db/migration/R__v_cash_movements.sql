@@ -1,7 +1,7 @@
 -- =====================================================================
 --  R__v_cash_movements - El libro de caja
 --
---  Migracion REPETIBLE: se vuelve a crear cada vez que cambia este
+--  Migración REPETIBLE: se vuelve a crear cada vez que cambia este
 --  archivo. Se borra y se crea de nuevo porque CREATE OR REPLACE VIEW
 --  no admite cambiar las columnas.
 --
@@ -12,22 +12,14 @@
 --    2. Movimientos manuales: gastos e ingresos varios.
 --    3 y 4. Transferencias entre cuentas propias, abiertas en una
 --       salida y una entrada. Sin cuenta de resultado: no son ingreso
---       ni egreso, pero sin ellas el resumen bancario no cierra.
+--       ni egreso.
 --
 --  direction es 'IN' / 'OUT', el sentido de la plata. En
 --  cash_transactions la columna dice INCOME / EXPENSE, y se traduce:
 --  una transferencia es entrada y salida, pero no ingreso ni egreso.
 --
 --  Vista y no tabla: todo es reconstruible desde sus origenes, asi que
---  no se puede desincronizar. Si alguna vez se permite EDITAR pagos o
---  movimientos (hoy solo se anulan), hay que volver a una tabla.
---
---  Los tres reportes del contador son esta vista filtrada distinto:
---    - por cuenta:   GROUP BY result_account_id
---                    WHERE result_account_id IS NOT NULL
---                    (el IS NOT NULL saca las transferencias)
---    - del mes:      WHERE direction = 'IN' AND movement_date BETWEEN ...
---    - por cuenta financiera: WHERE financial_account_id = ...
+--  no se puede desincronizar.
 --
 --  OJO: COUNT(*) cuenta movimientos, no recibos. La cantidad de cobros
 --  sale de payments.

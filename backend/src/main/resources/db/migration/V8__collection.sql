@@ -1,8 +1,6 @@
 -- =====================================================================
---  V8 - Cobranza a domicilio y debito automatico
+--  V8 - Cobranza a domicilio y débito automático
 --
---  Dos formas de cobrar que no inventan un circuito propio: las dos
---  terminan en un payment comun, igual que el cobro en ventanilla.
 --  Depende de V3 (members), V5 (billing_periods), V6 (payments,
 --  financial_accounts, payment_methods) y V7 (charges).
 -- =====================================================================
@@ -10,15 +8,6 @@
 
 -- ---------------------------------------------------------------------
 --  collectors
---  Rol de cobrador sobre people, igual que teachers.
---  Cada cobrador tiene su cuenta financiera "Cobranza a rendir" (tipo
---  TO_SETTLE): su saldo dice cuanta plata tiene sin rendir. Que la
---  cuenta sea de ese tipo lo valida el servicio.
---  Persona y cuenta son unicas entre los ACTIVOS, no en toda la tabla:
---  el reemplazo de un cobrador que se fue puede usar su misma cuenta.
---  commission_percentage es provisoria: todavia no se sabe como se
---  calcula la comision. Si se renegocia con el tiempo, entra una tabla
---  con valid_from, como los demas precios.
 -- ---------------------------------------------------------------------
 CREATE TABLE collectors (
   id                     INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -41,7 +30,7 @@ CREATE UNIQUE INDEX ux_collectors_person_active
   ON collectors (person_id)
   WHERE is_active;
 
--- Dos cobradores activos nunca comparten cuenta: mezclarian rendiciones.
+-- Dos cobradores activos nunca comparten cuenta.
 CREATE UNIQUE INDEX ux_collectors_account_active
   ON collectors (financial_account_id)
   WHERE is_active;
@@ -49,13 +38,6 @@ CREATE UNIQUE INDEX ux_collectors_account_active
 
 -- ---------------------------------------------------------------------
 --  collection_assignments
---  La cartera del cobrador y el resultado de cada visita.
---  Los cobros exitosos se reconstruyen desde payments; los FRACASOS no
---  ("no habia nadie", "paga la semana que viene", "se nego"): esa
---  informacion solo existe aca, y es la que la secretaria necesita
---  para saber a quien llamar.
---  El importe a cobrar no se guarda: se calcula de los cargos
---  pendientes al momento de la visita.
 --  payment_id solo si cobro.
 -- ---------------------------------------------------------------------
 CREATE TABLE collection_assignments (
@@ -69,15 +51,14 @@ CREATE TABLE collection_assignments (
   payment_id         BIGINT,
   created_at         TIMESTAMPTZ   NOT NULL DEFAULT now(),
 
-  -- Un socio no le toca a dos cobradores el mismo mes: lo visitarian
-  -- dos veces y se pagarian dos comisiones.
+  -- Un socio no le toca a dos cobradores el mismo mes
   CONSTRAINT ux_ca_member_period UNIQUE (member_id, billing_period_id),
   CONSTRAINT fk_ca_collector FOREIGN KEY (collector_id)      REFERENCES collectors (id),
   CONSTRAINT fk_ca_member    FOREIGN KEY (member_id)         REFERENCES members (id),
   CONSTRAINT fk_ca_period    FOREIGN KEY (billing_period_id) REFERENCES billing_periods (id),
   CONSTRAINT fk_ca_payment   FOREIGN KEY (payment_id)        REFERENCES payments (id),
 
-  -- Pendiente si y solo si todavia no se visito.
+  -- Pendiente si y solo si todavía no se visito.
   CONSTRAINT ck_ca_visited
     CHECK ((result = 'PENDING') = (visited_on IS NULL)),
   -- Cobrada si y solo si tiene pago.
@@ -87,7 +68,7 @@ CREATE TABLE collection_assignments (
 
 CREATE INDEX ix_ca_collector ON collection_assignments (collector_id, billing_period_id);
 
--- "Que me falta visitar": la consulta del celular del cobrador.
+-- "Que me falta visitar".
 CREATE INDEX ix_ca_pending
   ON collection_assignments (collector_id)
   WHERE result = 'PENDING';
@@ -95,18 +76,11 @@ CREATE INDEX ix_ca_pending
 
 -- ---------------------------------------------------------------------
 --  debit_mandates
---  La autorizacion de debito: alguien firmo "debitenme de esta cuenta".
---  Es de la CUENTA BANCARIA, no del socio: suele debitarse a varios
---  socios de una familia desde la misma cuenta. Asi el CBU vive en un
---  solo lugar y un cambio de banco se actualiza una vez.
---  payer_person_id = titular de la cuenta (suele ser un familiar).
---  Nunca se guarda el numero de tarjeta completo, solo los ultimos
---  cuatro digitos. El CBU se muestra enmascarado.
 -- ---------------------------------------------------------------------
 CREATE TABLE debit_mandates (
   id                   INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   payer_person_id      INT                   NOT NULL,
-  payment_method_id    INT                   NOT NULL,    -- debito en cuenta o en tarjeta
+  payment_method_id    INT                   NOT NULL,    -- débito en cuenta o en tarjeta
   cbu                  VARCHAR(22),
   card_last_four       VARCHAR(4),
   bank_name            VARCHAR(80),
@@ -135,10 +109,6 @@ CREATE INDEX ix_dm_status ON debit_mandates (status);
 
 -- ---------------------------------------------------------------------
 --  debit_mandate_members
---  A que socios cubre cada autorizacion. Se suma un hijo, se saca otro,
---  sin tocar la autorizacion.
---  Al salir se llena removed_on: no se borra, porque los lotes viejos
---  que lo incluian siguen teniendo sentido.
 -- ---------------------------------------------------------------------
 CREATE TABLE debit_mandate_members (
   id                INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -158,8 +128,7 @@ CREATE TABLE debit_mandate_members (
 
 CREATE INDEX ix_dmm_member ON debit_mandate_members (member_id);
 
--- La regla que importa: un socio no puede estar en dos adhesiones
--- activas a la vez, o se le debitaria dos veces.
+-- Un socio no puede estar en dos adhesiones activas a la vez.
 CREATE UNIQUE INDEX ux_dmm_member_active
   ON debit_mandate_members (member_id)
   WHERE removed_on IS NULL;
@@ -167,12 +136,6 @@ CREATE UNIQUE INDEX ux_dmm_member_active
 
 -- ---------------------------------------------------------------------
 --  debit_batches
---  La presentacion del mes al banco. Su trabajo mas importante es ser
---  una puerta: PRESENTED bloquea el cobro en ventanilla de los cargos
---  incluidos; PROCESSED impide importar dos veces la respuesta.
---  credited_on = fecha de acreditacion, de todo el lote: de ahi sale
---  el paid_on de los pagos generados. processed_on = cuando se importo
---  el archivo, que puede no coincidir.
 -- ---------------------------------------------------------------------
 CREATE TABLE debit_batches (
   id                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -198,8 +161,7 @@ CREATE TABLE debit_batches (
 CREATE INDEX ix_db_period ON debit_batches (billing_period_id);
 CREATE INDEX ix_db_status ON debit_batches (status);
 
--- Un lote por periodo. Si el club hace una segunda presentacion para
--- los que rebotaron, este indice hay que sacarlo.
+-- Un lote por periodo.
 CREATE UNIQUE INDEX ux_db_period_active
   ON debit_batches (billing_period_id)
   WHERE status <> 'CANCELLED';
@@ -207,13 +169,6 @@ CREATE UNIQUE INDEX ux_db_period_active
 
 -- ---------------------------------------------------------------------
 --  debit_batch_items
---  Una linea por adhesion: lo que se le pidio al banco y que contesto.
---  Los aceptados se reconstruyen desde payments; los RECHAZADOS no: el
---  motivo solo existe aca, y es lo que dice a quien llamar y si la
---  adhesion sigue sirviendo.
---  Un rechazado no escribe nada mas: nunca hubo pago, no hay que
---  revertir.
---  reference viaja al banco y vuelve: sirve para emparejar la respuesta.
 -- ---------------------------------------------------------------------
 CREATE TABLE debit_batch_items (
   id                BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -245,11 +200,6 @@ CREATE INDEX ix_dbi_result  ON debit_batch_items (result);
 
 -- ---------------------------------------------------------------------
 --  debit_batch_item_charges
---  Que cargos exactos cubre cada linea, congelados AL PRESENTAR.
---  Recalcularlos al importar daria otro conjunto si en el medio se
---  genero un mes nuevo o se anulo un cargo. Con esta foto, al importar
---  se verifica que sigan pendientes, y el bloqueo del cobro en
---  ventanilla sabe exactamente que cargos estan en un lote presentado.
 -- ---------------------------------------------------------------------
 CREATE TABLE debit_batch_item_charges (
   id                   BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -261,5 +211,5 @@ CREATE TABLE debit_batch_item_charges (
   CONSTRAINT fk_dbic_charge FOREIGN KEY (charge_id)           REFERENCES charges (id)
 );
 
--- "Este cargo, esta en un lote presentado?": el bloqueo de ventanilla.
+-- "¿Este cargo, está en un lote presentado?".
 CREATE INDEX ix_dbic_charge ON debit_batch_item_charges (charge_id);

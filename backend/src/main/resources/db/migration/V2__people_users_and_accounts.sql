@@ -1,18 +1,13 @@
 -- =====================================================================
 --  V2 - Personas, usuarios y plan de cuentas
 --
---  Las tablas de las que dependen casi todas las demas: por eso van
---  primero. Ver Decisiones en Notion para el por que de cada una.
+--  Las tablas de las que dependen casi todas las demás: por eso van
+--  primero.
 -- =====================================================================
 
 
 -- ---------------------------------------------------------------------
 --  people
---  Cualquier ser humano que el club necesite nombrar. Los roles
---  (members, teachers, users, collectors, third_parties) cuelgan de aca.
---  Sin is_active: se da de baja el rol, no la persona.
---  email es contacto, no credencial: puede repetirse (una madre en las
---  fichas de sus hijos). La credencial unica vive en users.
 -- ---------------------------------------------------------------------
 CREATE TABLE people (
   id               INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -32,22 +27,17 @@ CREATE TABLE people (
     CHECK (birth_date IS NULL OR birth_date <= CURRENT_DATE)
 );
 
--- La unicidad es del par tipo + numero, no del numero solo.
+-- La unicidad es del par tipo + número, no del número solo.
 -- Parcial porque el documento es opcional a nivel persona.
 CREATE UNIQUE INDEX ux_people_document
   ON people (document_type, document_number)
   WHERE document_number IS NOT NULL;
 
--- Busqueda de la secretaria por apellido.
 CREATE INDEX ix_people_name ON people (last_name, first_name);
 
 
 -- ---------------------------------------------------------------------
 --  users
---  Acceso al sistema. Rol sobre people: el portero y el contador no
---  son socios.
---  password_hash admite nulo a proposito: el usuario se da de alta y
---  define su contrasenia desde un link (password_token).
 -- ---------------------------------------------------------------------
 CREATE TABLE users (
   id                      INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -71,7 +61,7 @@ CREATE TABLE users (
     CHECK ((password_token IS NULL) = (password_token_expires IS NULL))
 );
 
--- El mail es la credencial: unico sin distinguir mayusculas.
+-- Único sin distinguir mayúsculas.
 CREATE UNIQUE INDEX ux_users_email ON users (lower(email));
 
 CREATE UNIQUE INDEX ux_users_password_token
@@ -81,8 +71,7 @@ CREATE UNIQUE INDEX ux_users_password_token
 
 -- ---------------------------------------------------------------------
 --  user_roles
---  Una persona puede tener varios roles (profesor y socio a la vez).
---  El unico (user_id, role) tambien sirve para buscar por usuario,
+--  El único (user_id, role) también sirve para buscar por usuario,
 --  porque user_id es su primera columna.
 -- ---------------------------------------------------------------------
 CREATE TABLE user_roles (
@@ -97,12 +86,8 @@ CREATE TABLE user_roles (
 
 -- ---------------------------------------------------------------------
 --  accounts
---  El plan de cuentas del contador. Arbol de profundidad variable
+--  Árbol de profundidad variable
 --  (parent_id recursivo). Formato de number_code: 1.1.1.01.001
---  account_type se guarda, no se deduce: en este plan "4." contiene
---  recursos y gastos. Nulo en los titulos mixtos.
---  is_postable distingue imputables de titulos.
---  Ninguna logica depende del nombre: tiene errores de tipeo.
 -- ---------------------------------------------------------------------
 CREATE TABLE accounts (
   id            INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -124,10 +109,9 @@ CREATE TABLE accounts (
     CHECK (parent_id IS NULL OR parent_id <> id)
 );
 
--- Armado del arbol: los hijos de cada nodo.
+-- Armado del árbol: los hijos de cada nodo.
 CREATE INDEX ix_accounts_parent ON accounts (parent_id);
 
--- El desplegable al cargar un movimiento: solo imputables y activas.
 CREATE INDEX ix_accounts_postable
   ON accounts (account_type)
   WHERE is_postable AND is_active;
@@ -135,9 +119,7 @@ CREATE INDEX ix_accounts_postable
 
 -- ---------------------------------------------------------------------
 --  accounting_periods
---  Tabla de control, no de clasificacion: nadie la referencia. Se
---  consulta por (year, month) para saber si un mes admite escrituras.
---  Fila inexistente = periodo abierto.
+--  Tabla de control, no de clasificación: nadie la referencia.
 -- ---------------------------------------------------------------------
 CREATE TABLE accounting_periods (
   id                 INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

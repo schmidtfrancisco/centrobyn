@@ -2,17 +2,16 @@
 --  V1 - Tipos enumerados
 --
 --  Todos los enums del modelo, juntos y antes que cualquier tabla.
---  Valores en MAYUSCULAS para que coincidan con las constantes de Java
+--  Valores en MAYÚSCULAS para que coincidan con las constantes de Java
 --  (Hibernate mapea el enum nativo por el nombre exacto).
 --
---  Agregar un valor despues: ALTER TYPE ... ADD VALUE en una migracion
+--  Agregar un valor después: ALTER TYPE ... ADD VALUE en una migración
 --  nueva. Sacar o reordenar un valor exige recrear el tipo: evitarlo.
 -- =====================================================================
 
 
 -- ---- Personas y socios ----------------------------------------------
 
--- Fijado por el Estado, no por el club: por eso enum y no tabla.
 CREATE TYPE document_type AS ENUM (
   'DNI',
   'LC',
@@ -21,7 +20,6 @@ CREATE TYPE document_type AS ENUM (
   'PASSPORT'
 );
 
--- Sin SUSPENDED: el club no suspende socios.
 CREATE TYPE member_status AS ENUM (
   'ACTIVE',
   'INACTIVE'
@@ -42,27 +40,24 @@ CREATE TYPE teacher_role AS ENUM (
 );
 
 
--- ---- Facturacion ----------------------------------------------------
+-- ---- Facturación ----------------------------------------------------
 
 CREATE TYPE billing_period_status AS ENUM (
   'OPEN',
   'GENERATED'
 );
 
--- OTHER: cargos esporadicos, siempre desde un concepto del catalogo.
 CREATE TYPE charge_type AS ENUM (
   'MEMBERSHIP',
   'ACTIVITY',
   'OTHER'
 );
 
--- Sin PARTIAL: no se aceptan pagos parciales.
 CREATE TYPE charge_status AS ENUM (
   'PENDING',
   'PAID',
   'CANCELLED'
 );
-
 
 -- ---- Estado de registros de dinero ----------------------------------
 
@@ -87,7 +82,7 @@ CREATE TYPE visit_result AS ENUM (
 );
 
 
--- ---- Debito automatico ----------------------------------------------
+-- ---- Débito automático ----------------------------------------------
 
 CREATE TYPE debit_mandate_status AS ENUM (
   'ACTIVE',
@@ -96,9 +91,9 @@ CREATE TYPE debit_mandate_status AS ENUM (
 );
 
 CREATE TYPE debit_batch_status AS ENUM (
-  'DRAFT',      -- armandose
-  'PRESENTED',  -- enviado al banco: sus cargos quedan bloqueados
-  'PROCESSED',  -- respuesta del banco importada
+  'DRAFT',
+  'PRESENTED',
+  'PROCESSED',
   'CANCELLED'
 );
 
@@ -109,7 +104,7 @@ CREATE TYPE debit_item_result AS ENUM (
 );
 
 
--- ---- Contabilidad y tesoreria ---------------------------------------
+-- ---- Contabilidad y tesorería ---------------------------------------
 
 CREATE TYPE account_type AS ENUM (
   'ASSET',
@@ -119,8 +114,6 @@ CREATE TYPE account_type AS ENUM (
   'EXPENSE'
 );
 
--- CHECKS    = "Cheques en cartera"
--- TO_SETTLE = "Cobranza a rendir", una cuenta por cobrador
 CREATE TYPE financial_account_type AS ENUM (
   'CASH',
   'BANK',

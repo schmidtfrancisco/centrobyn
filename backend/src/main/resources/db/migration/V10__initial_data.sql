@@ -6,12 +6,10 @@
 --       abreviaturas del sistema actual.
 --    2. Las cuentas financieras: donde esta la plata.
 --    3. Los medios de pago.
---    4. La fila unica de configuracion del club.
---  Categorias de socio, disciplinas y usuarios NO van aca: los carga el
---  club desde las pantallas.
+--    4. La fila unica de configuración del club.
 --
 --  Como los id son GENERATED ALWAYS no se pueden escribir a mano, y
---  ademas un alta fallida consume numeros. Por eso nada de este archivo
+--  ademas un alta fallida consume números. Por eso nada de este archivo
 --  usa un id fijo: todo se busca por number_code o por code.
 -- =====================================================================
 
@@ -25,20 +23,17 @@
 --    b) se copian todas las cuentas a accounts, sin padre;
 --    c) se completa parent_id buscando al padre por su number_code.
 --  Hace falta el paso c) porque un INSERT no ve las filas que el mismo
---  INSERT esta agregando: el padre todavia "no existe" para su hijo.
+--  INSERT está agregando: el padre todavia "no existe" para su hijo.
 --
---  El padre de una cuenta es la misma numeracion con el ultimo tramo
+--  El padre de una cuenta es la misma numeracion con el último tramo
 --  distinto de cero puesto en cero:
 --    4.3.2.04.003 -> 4.3.2.04.000 -> 4.3.2.00.000 -> 4.3.0.00.000 -> 4.0.0.00.000
 --
---  Dos reglas que salen del numero, no se escriben cuenta por cuenta:
---    - is_postable: las que terminan en 000 son titulos y no se puede
---      imputar en ellas. INDUMENTARIA DEPORTIVA (1.1.4.01.000) y PASIVO
---      NO CORRIENTE quedan como titulos sin hijos hasta que el contador
---      les agregue subcuentas.
+--  Dos reglas que salen del número, no se escriben cuenta por cuenta:
+--    - is_postable: las que terminan en 000 son titulos.
 --    - account_type, por rango: 1 activo, 2 pasivo, 3 patrimonio,
 --      4.1 ingresos, 4.2 y 4.3 gastos. 4.0.0.00.000 RESULTADOS queda sin
---      tipo porque agrupa ingresos y gastos. A confirmar con el contador.
+--      tipo porque agrupa ingresos y gastos.
 --
 --  Nombres: los del plan del contador, con los errores de tipeo
 --  corregidos (PROESORES, MANTNIMIENTO, CUIERTA, ACTIVIDAES).
@@ -432,32 +427,28 @@ WHERE  a.number_code = t.number_code;
 
 -- ---------------------------------------------------------------------
 --  2. Cuentas financieras
---  Cada una apunta a su cuenta del plan. Las cajas de los cobradores
---  no van aca: se crean al dar de alta a cada cobrador.
---  Caja moneda extranjera queda afuera: el sistema trabaja en pesos.
+--  Cada una apunta a su cuenta del plan.
 -- ---------------------------------------------------------------------
 INSERT INTO financial_accounts (name, account_type, account_id)
 SELECT v.name, v.account_type::financial_account_type, a.id
 FROM (VALUES
-  ('Recaudaciones a depositar',      'CASH',      '1.1.1.01.001'),  -- la caja de secretaria
+  ('Recaudaciones a depositar',      'CASH',      '1.1.1.01.001'),
   ('Caja chica',                     'CASH',      '1.1.1.01.002'),
   ('Cheques en cartera',             'CHECKS',    '1.1.1.01.004'),
   ('Banco Provincia cta cte',        'BANK',      '1.1.1.02.001'),
   ('Banco Santander',                'BANK',      '1.1.1.02.002'),
   ('Mercado Pago',                   'WALLET',    '1.1.1.02.003'),
   ('Banco Provincia cta cte tienda', 'BANK',      '1.1.1.02.004'),
-  ('Tarjetas a cobrar',              'TO_SETTLE', '1.1.3.02.001')   -- lo que la tarjeta todavia no acredito
+  ('Tarjetas a cobrar',              'TO_SETTLE', '1.1.3.02.001')
 ) AS v (name, account_type, number_code)
 JOIN accounts a ON a.number_code = v.number_code;
 
 
 -- ---------------------------------------------------------------------
 --  3. Medios de pago
---  financial_account_type limita a que tipo de cuenta puede ir cada
---  medio: un pago en efectivo solo puede entrar a una caja.
---  Todos arrancan SIN comision: los checks exigen un porcentaje cuando
+--  Todos arrancan SIN comisión: los checks exigen un porcentaje cuando
 --  has_fee es true, y ese porcentaje lo define el club. Las cuentas de
---  gasto ya existen (GASTOS TARJETAS, GASTOS DEBITO AUTOMATICO).
+--  gasto ya existen (GASTOS TARJETAS, GASTOS DÉBITO AUTOMÁTICO).
 -- ---------------------------------------------------------------------
 INSERT INTO payment_methods (code, name, financial_account_type) VALUES
   ('CASH',     'Efectivo',          'CASH'),
@@ -472,8 +463,6 @@ INSERT INTO payment_methods (code, name, financial_account_type) VALUES
 --  4. Configuracion del club
 --  La unica fila. Todo lo demas con sus valores por defecto: 10 dias de
 --  gracia, vencimiento el 10, 60 dias para morosidad prolongada y los
---  tres talonarios en 0 (el primer recibo de cada serie sera el 1).
---  Si el club ya viene numerando, se actualizan los talonarios al
---  ultimo numero emitido antes de empezar a cobrar.
+--  tres talonarios en 0 (el primer recibo de cada serie será el 1).
 -- ---------------------------------------------------------------------
 INSERT INTO club_settings (id, club_name) VALUES (1, 'Centro Blanco y Negro');
